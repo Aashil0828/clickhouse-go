@@ -17,6 +17,8 @@ func main() {
 
 	}
 
+	defer connection.Close()
+
 	err = query.CreateTable(ctx, connection)
 
 	if err != nil {

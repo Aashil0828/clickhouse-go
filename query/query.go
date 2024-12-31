@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -18,7 +17,7 @@ const (
 
 	endTime = "2024-12-30 12:00:00"
 
-	systemCpuPercent = "system_cpu_percent"
+	systemCPUPercent = "system_cpu_percent"
 
 	systemMemoryFreeBytes = "system_memory_free_bytes"
 
@@ -39,7 +38,7 @@ const (
 	`
 
 	insertQuery = `
-		INSERT INTO metric_data(monitor_id, metric, timestamp, value) VALUES
+		INSERT INTO metric_data(monitor_id, metric, timestamp, value)
 	`
 
 	gaugeWithoutFilterQuery = `
@@ -163,7 +162,7 @@ var (
 
 	metrics = []string{
 
-		systemCpuPercent,
+		systemCPUPercent,
 
 		systemMemoryFreeBytes,
 
@@ -231,12 +230,13 @@ func InsertData(ctx context.Context, connection clickhouse.Conn) (err error) {
 		return err
 
 	}
+	Batch, err := connection.PrepareBatch(ctx, insertQuery)
 
-	var queryBuilder strings.Builder
+	if err != nil {
 
-	queryBuilder.WriteString(insertQuery)
+		return err
 
-	values := make([]interface{}, 0, 4*288)
+	}
 
 	for monitorID := range monitors {
 
@@ -246,9 +246,13 @@ func InsertData(ctx context.Context, connection clickhouse.Conn) (err error) {
 
 			for timestamp.Before(end) {
 
-				queryBuilder.WriteString(" (?, ?, ?, ?),")
+				err = Batch.Append(monitorID, metric, timestamp, 100*rand.Float64())
 
-				values = append(values, monitorID, metric, timestamp, 100*rand.Float64())
+				if err != nil {
+
+					return err
+
+				}
 
 				timestamp = timestamp.Add(5 * time.Minute)
 
@@ -258,9 +262,7 @@ func InsertData(ctx context.Context, connection clickhouse.Conn) (err error) {
 
 	}
 
-	query := strings.TrimRight(queryBuilder.String(), ",")
-
-	err = connection.Exec(ctx, query, values...)
+	err = Batch.Send()
 
 	return err
 
@@ -281,7 +283,7 @@ func GaugeWithoutFilter(ctx context.Context, connection clickhouse.Conn) (err er
 
 	defer rows.Close()
 
-	fmt.Println("avg_" + systemCpuPercent)
+	fmt.Println("avg_" + systemCPUPercent)
 
 	for rows.Next() {
 
@@ -320,7 +322,7 @@ func GaugeWithFilter(ctx context.Context, connection clickhouse.Conn) (err error
 
 	defer rows.Close()
 
-	fmt.Println("avg_" + systemCpuPercent)
+	fmt.Println("avg_" + systemCPUPercent)
 
 	for rows.Next() {
 
@@ -359,7 +361,7 @@ func GridWithFilter(ctx context.Context, connection clickhouse.Conn) (err error)
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
@@ -402,7 +404,7 @@ func GridWithoutFilter(ctx context.Context, connection clickhouse.Conn) (err err
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
@@ -445,7 +447,7 @@ func TopNWithoutFilter(ctx context.Context, connection clickhouse.Conn, num int)
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
@@ -488,17 +490,17 @@ func TopNWithFilter(ctx context.Context, connection clickhouse.Conn, num int) (e
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
 		var monitorId uint32
 
-		var avgSystemCpuPercent float64
+		var avgSystemCPUPercent float64
 
 		var avgSystemMemoryFreeBytes float64
 
-		err = rows.Scan(&monitorId, &avgSystemCpuPercent, &avgSystemMemoryFreeBytes)
+		err = rows.Scan(&monitorId, &avgSystemCPUPercent, &avgSystemMemoryFreeBytes)
 
 		if err != nil {
 
@@ -506,7 +508,7 @@ func TopNWithFilter(ctx context.Context, connection clickhouse.Conn, num int) (e
 
 		}
 
-		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", monitorId, avgSystemCpuPercent, avgSystemMemoryFreeBytes))
+		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", monitorId, avgSystemCPUPercent, avgSystemMemoryFreeBytes))
 
 	}
 
@@ -531,17 +533,17 @@ func HistogramWithFilterWithoutGroupBy(ctx context.Context, connection clickhous
 
 	defer rows.Close()
 
-	fmt.Println("timestamp" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("timestamp" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
 		var timestamp time.Time
 
-		var avgSystemCpuPercent float64
+		var avgSystemCPUPercent float64
 
 		var avgSystemMemoryFreeBytes float64
 
-		err = rows.Scan(&timestamp, &avgSystemCpuPercent, &avgSystemMemoryFreeBytes)
+		err = rows.Scan(&timestamp, &avgSystemCPUPercent, &avgSystemMemoryFreeBytes)
 
 		if err != nil {
 
@@ -549,7 +551,7 @@ func HistogramWithFilterWithoutGroupBy(ctx context.Context, connection clickhous
 
 		}
 
-		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", timestamp.UTC().String(), avgSystemCpuPercent, avgSystemMemoryFreeBytes))
+		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", timestamp.UTC().String(), avgSystemCPUPercent, avgSystemMemoryFreeBytes))
 
 	}
 
@@ -574,17 +576,17 @@ func HistogramWithoutFilterWithoutGroupBy(ctx context.Context, connection clickh
 
 	defer rows.Close()
 
-	fmt.Println("timestamp" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("timestamp" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
 		var timestamp time.Time
 
-		var avgSystemCpuPercent float64
+		var avgSystemCPUPercent float64
 
 		var avgSystemMemoryFreeBytes float64
 
-		err = rows.Scan(&timestamp, &avgSystemCpuPercent, &avgSystemMemoryFreeBytes)
+		err = rows.Scan(&timestamp, &avgSystemCPUPercent, &avgSystemMemoryFreeBytes)
 
 		if err != nil {
 
@@ -592,7 +594,7 @@ func HistogramWithoutFilterWithoutGroupBy(ctx context.Context, connection clickh
 
 		}
 
-		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", timestamp.UTC().String(), avgSystemCpuPercent, avgSystemMemoryFreeBytes))
+		fmt.Println(fmt.Sprintf("%v    |   %v  |   %v   ", timestamp.UTC().String(), avgSystemCPUPercent, avgSystemMemoryFreeBytes))
 
 	}
 
@@ -617,7 +619,7 @@ func HistogramWithFilterWithGroupBy(ctx context.Context, connection clickhouse.C
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "timestamp" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "timestamp" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
@@ -625,11 +627,11 @@ func HistogramWithFilterWithGroupBy(ctx context.Context, connection clickhouse.C
 
 		var timestamp time.Time
 
-		var avgSystemCpuPercent float64
+		var avgSystemCPUPercent float64
 
 		var avgSystemMemoryFreeBytes float64
 
-		err = rows.Scan(&monitorId, &timestamp, &avgSystemCpuPercent, &avgSystemMemoryFreeBytes)
+		err = rows.Scan(&monitorId, &timestamp, &avgSystemCPUPercent, &avgSystemMemoryFreeBytes)
 
 		if err != nil {
 
@@ -637,7 +639,7 @@ func HistogramWithFilterWithGroupBy(ctx context.Context, connection clickhouse.C
 
 		}
 
-		fmt.Println(fmt.Sprintf("%v    |    %v    |   %v  |   %v   ", monitorId, timestamp.UTC().String(), avgSystemCpuPercent, avgSystemMemoryFreeBytes))
+		fmt.Println(fmt.Sprintf("%v    |    %v    |   %v  |   %v   ", monitorId, timestamp.UTC().String(), avgSystemCPUPercent, avgSystemMemoryFreeBytes))
 
 	}
 
@@ -662,7 +664,7 @@ func HistogramWithoutFilterWithGroupBy(ctx context.Context, connection clickhous
 
 	defer rows.Close()
 
-	fmt.Println("monitor_id" + " | " + "timestamp" + " | " + "avg_" + systemCpuPercent + " | " + "avg_" + systemMemoryFreeBytes)
+	fmt.Println("monitor_id" + " | " + "timestamp" + " | " + "avg_" + systemCPUPercent + " | " + "avg_" + systemMemoryFreeBytes)
 
 	for rows.Next() {
 
@@ -670,11 +672,11 @@ func HistogramWithoutFilterWithGroupBy(ctx context.Context, connection clickhous
 
 		var timestamp time.Time
 
-		var avgSystemCpuPercent float64
+		var avgSystemCPUPercent float64
 
 		var avgSystemMemoryFreeBytes float64
 
-		err = rows.Scan(&monitorId, &timestamp, &avgSystemCpuPercent, &avgSystemMemoryFreeBytes)
+		err = rows.Scan(&monitorId, &timestamp, &avgSystemCPUPercent, &avgSystemMemoryFreeBytes)
 
 		if err != nil {
 
@@ -682,7 +684,7 @@ func HistogramWithoutFilterWithGroupBy(ctx context.Context, connection clickhous
 
 		}
 
-		fmt.Println(fmt.Sprintf("%v    |    %v    |   %v  |   %v   ", monitorId, timestamp.UTC().String(), avgSystemCpuPercent, avgSystemMemoryFreeBytes))
+		fmt.Println(fmt.Sprintf("%v    |    %v    |   %v  |   %v   ", monitorId, timestamp.UTC().String(), avgSystemCPUPercent, avgSystemMemoryFreeBytes))
 
 	}
 
