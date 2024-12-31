@@ -86,7 +86,6 @@ const (
 		GROUP BY monitor_id
 		ORDER BY 
 		    avg_system_cpu_percent desc, 
-		    avg_system_memory_free_bytes desc
 		LIMIT ?
 	`
 
@@ -100,7 +99,6 @@ const (
 		GROUP BY monitor_id
 		ORDER BY 
 		    avg_system_cpu_percent desc, 
-		    avg_system_memory_free_bytes desc
 		LIMIT ?
 	`
 
