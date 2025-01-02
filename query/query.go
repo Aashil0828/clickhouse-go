@@ -85,7 +85,7 @@ const (
 		AND monitor_id in (1, 4, 6, 8, 10)
 		GROUP BY monitor_id
 		ORDER BY 
-		    avg_system_cpu_percent desc, 
+		    avg_system_cpu_percent desc
 		LIMIT ?
 	`
 
@@ -98,7 +98,7 @@ const (
 		WHERE metric IN ('system_cpu_percent', 'system_memory_free_bytes')
 		GROUP BY monitor_id
 		ORDER BY 
-		    avg_system_cpu_percent desc, 
+		    avg_system_cpu_percent desc
 		LIMIT ?
 	`
 
@@ -112,7 +112,6 @@ const (
 		AND monitor_id in (1, 4, 6)
 		GROUP BY timestamp
 		ORDER BY timestamp
-		LIMIT 20
 	`
 
 	histogramWithoutFilterWithoutGroupByQuery = `
@@ -124,7 +123,6 @@ const (
 		WHERE metric IN ('system_cpu_percent', 'system_memory_free_bytes')
 		GROUP BY timestamp
 		ORDER BY timestamp
-		LIMIT 20
 	`
 
 	histogramWithFilterWithGroupByQuery = `
@@ -138,7 +136,6 @@ const (
 		AND monitor_id in (1, 4, 6)
 		GROUP BY timestamp, monitor_id
 		ORDER BY monitor_id, timestamp
-		LIMIT 20
 	`
 
 	histogramWithoutFilterWithGroupByQuery = `
@@ -151,7 +148,6 @@ const (
 		WHERE metric IN ('system_cpu_percent', 'system_memory_free_bytes')
 		GROUP BY timestamp, monitor_id
 		ORDER BY monitor_id, timestamp
-		LIMIT 20
 	`
 )
 
